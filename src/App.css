@@ -1,0 +1,110 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+
+.typewriter {
+  background: transparent !important;
+  font-size: 1.2rem;
+  font-family: monospace;
+  color: #000;
+  white-space: pre-wrap;
+  text-align: center;
+}
+
+.cursor {
+  display: inline-block;
+  width: 1ch;
+  animation: blink 1s step-end infinite;
+  color: #000;
+  background: transparent;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes AR {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+}
+
+.voice-dot {
+  height: 80px;
+  width:  80px;
+  background-color: white;
+  border-radius: 50%;
+  animation: AR 1.5s ease-in-out infinite;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+.bouncing-ball {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  animation: bounce 2s ease-in-out infinite;
+  background: transparent;
+}
+
+/* Internal glowing waves */
+.bouncing-ball::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(0, 255, 255, 0.3), transparent 40%),
+              radial-gradient(circle at 70% 40%, rgba(255, 0, 255, 0.3), transparent 40%),
+              radial-gradient(circle at 50% 80%, rgba(138, 43, 226, 0.35), transparent 40%),
+              radial-gradient(circle at 60% 20%, rgba(0, 191, 255, 0.3), transparent 40%);
+  background-size: 200% 200%;
+  animation: glowWave 6s ease-in-out infinite;
+  z-index: 100;
+  mix-blend-mode: screen;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.2),
+              0 0 30px rgba(255, 0, 255, 0.15),
+              0 0 15px rgba(138, 43, 226, 0.2);
+}
+
+/* Bouncing motion */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* Smooth, shifting color wave animation */
+@keyframes glowWave {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 0%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 100%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
