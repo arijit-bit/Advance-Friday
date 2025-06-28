@@ -343,6 +343,8 @@ function App() {
     localStorage.removeItem('friday_chats');
   }, []);
 
+  
+  
   //Fetch Friday
   const onSubmit = async (data) => {
     setaudio(false);
@@ -391,7 +393,7 @@ function App() {
       textareaRef.current.style.height = "auto";
     }
   };
-
+  //audio 
   const voiceAssitance = () => {
     if (!('webkitSpeechRecognition' in window)) {
       console.error("Speech recognition not supported.");
