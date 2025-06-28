@@ -75,20 +75,31 @@ function App() {
 
   // Vision Assistance
   let isRestarting = false;
-  let isMicrophoneActive = true; // New flag to control microphone state
+  let isMicrophoneActive = true;
+  let finalTranscript = ""; // Moved to outer scope for reuse
 
   const visionVoiceAssistance = () => {
     if (!("webkitSpeechRecognition" in window) || isRestarting || !isMicrophoneActive) return;
 
+    // Cleanup any previous recognizer
+    if (recognitionRef.current) {
+      recognitionRef.current.onresult = null;
+      recognitionRef.current.onend = null;
+      recognitionRef.current.onerror = null;
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+    }
+
     const recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
+    recognition.lang = "en-US";
 
-    let finalTranscript = "";
+    recognition.onstart = () => {
+      setVisionAudio(true);
+    };
 
-    recognition.onstart = () => setVisionAudio(true);
-
-    recognition.onresult = async (event) => {
+    recognition.onresult = (event) => {
       let newTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
@@ -98,40 +109,53 @@ function App() {
 
       if (newTranscript.trim()) {
         finalTranscript += newTranscript;
-        recognition.stop(); // Stop listening before speaking
         setVisionAudio(false);
         setVisionState("thinking");
-
-        const userInput = finalTranscript.trim();
-        isMicrophoneActive = false; // Mute the microphone during fetching and speaking
-        const response = await fetchVisionData(userInput);
-
-        setVisionState("talking");
-
-        // Avoid infinite loop by delaying next recognition start
-        isRestarting = true;
-        speakVisionOutput(response, () => {
-          finalTranscript = "";
-          setVisionState("idle");
-          isMicrophoneActive = true; // Unmute the microphone after speaking
-
-          setTimeout(() => {
-            isRestarting = false;
-            visionVoiceAssistance(); // Safe to restart after delay
-          }, 1000); // 1 second delay to avoid Android crash/loop
-        });
+        isMicrophoneActive = false;
+        recognition.stop(); // Let it flow to onend
       }
     };
 
     recognition.onerror = () => {
       setVisionAudio(false);
       setVisionState("idle");
-      isMicrophoneActive = true; // Unmute on error
+      isMicrophoneActive = true;
+      finalTranscript = ""; // Reset on error
     };
 
-    recognition.onend = () => {
+    recognition.onend = async () => {
       setVisionAudio(false);
-      isMicrophoneActive = true; // Unmute when recognition ends
+
+      if (!finalTranscript.trim()) {
+        // Nothing was spoken
+        isMicrophoneActive = true;
+        return;
+      }
+
+      const userInput = finalTranscript.trim();
+      finalTranscript = ""; // Reset before speaking
+
+      try {
+        const response = await fetchVisionData(userInput);
+        setVisionState("talking");
+
+        isRestarting = true;
+
+        speakVisionOutput(response, () => {
+          setVisionState("idle");
+          isMicrophoneActive = true;
+
+          setTimeout(() => {
+            isRestarting = false;
+            visionVoiceAssistance(); // Restart listening after speaking
+          }, 1000); // Safe delay for Android
+        });
+
+      } catch (err) {
+        console.error("Error in fetch/speak:", err);
+        setVisionState("idle");
+        isMicrophoneActive = true;
+      }
     };
 
     recognitionRef.current = recognition;
@@ -386,7 +410,7 @@ function App() {
       textareaRef.current.style.height = "auto";
     }
   };
-  //audio 
+  // Friday audio 
   const voiceAssitance = () => {
     if (!('webkitSpeechRecognition' in window)) {
       console.error("Speech recognition not supported.");
