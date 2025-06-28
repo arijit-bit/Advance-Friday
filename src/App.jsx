@@ -200,7 +200,7 @@ function App() {
       setvisionAudio(false);
       setVisionState("idle");
     }
-    // setvisionAudio(false);
+    setvisionAudio(false);
   }
   const handelVAon = () => {
     setvisionAudio(true)
