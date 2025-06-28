@@ -73,11 +73,12 @@ function App() {
     }
   };
 
-  // Vision Assiatance
+  // Vision Assistance
   let isRestarting = false;
+  let isMicrophoneActive = true; // New flag to control microphone state
 
   const visionVoiceAssistance = () => {
-    if (!("webkitSpeechRecognition" in window) || isRestarting) return;
+    if (!("webkitSpeechRecognition" in window) || isRestarting || !isMicrophoneActive) return;
 
     const recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
@@ -102,6 +103,7 @@ function App() {
         setVisionState("thinking");
 
         const userInput = finalTranscript.trim();
+        isMicrophoneActive = false; // Mute the microphone during fetching and speaking
         const response = await fetchVisionData(userInput);
 
         setVisionState("talking");
@@ -111,6 +113,7 @@ function App() {
         speakVisionOutput(response, () => {
           finalTranscript = "";
           setVisionState("idle");
+          isMicrophoneActive = true; // Unmute the microphone after speaking
 
           setTimeout(() => {
             isRestarting = false;
@@ -123,21 +126,22 @@ function App() {
     recognition.onerror = () => {
       setVisionAudio(false);
       setVisionState("idle");
+      isMicrophoneActive = true; // Unmute on error
     };
 
     recognition.onend = () => {
       setVisionAudio(false);
+      isMicrophoneActive = true; // Unmute when recognition ends
     };
 
     recognitionRef.current = recognition;
     recognition.start();
   };
 
-
-  //fetch vision data
+  // Fetch vision data
   const fetchVisionData = async (text) => {
     try {
-      let newtext = `Assume your name is vision and you are a voice assistant, your reply should be small, concise to the point and in few sentences. The user input is: ${text}`
+      let newtext = `Assume your name is vision and you are a voice assistant, your reply should be small, concise to the point and in few sentences. The user input is: ${text}`;
       const Vres = await fetch("/api/vision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,26 +158,17 @@ function App() {
     }
   };
 
-  //TTS conversion
-  /**
- * Converts text to speech, handling interruptions and errors.
- *
- * @param {string} text The text to be spoken.
- * @param {Function} [onComplete] An optional callback to run after speech finishes.
- */
+  // TTS conversion
   const speakVisionOutput = (text, onComplete) => {
-    // Check if the browser supports the Speech Synthesis API
     if (!('speechSynthesis' in window)) {
       console.error("Sorry, your browser does not support text-to-speech.");
-      // Optionally, run the onComplete callback immediately if speech is not possible
       if (typeof onComplete === 'function') onComplete();
       return;
     }
 
     const synth = window.speechSynthesis;
 
-    // --- Crucial for a good UX: Cancel any ongoing speech ---
-    // This stops the previous utterance before starting a new one.
+    // Cancel any ongoing speech
     if (synth.speaking) {
       synth.cancel();
     }
@@ -188,7 +183,6 @@ function App() {
 
     utterance.onerror = (event) => {
       console.error("SpeechSynthesisUtterance.onerror", event);
-      // Also run the onComplete callback on error to prevent the UI from getting stuck
       if (typeof onComplete === 'function') {
         onComplete();
       }
@@ -198,8 +192,6 @@ function App() {
     synth.speak(utterance);
   };
 
-
-
   const handelVAoff = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
@@ -207,11 +199,12 @@ function App() {
       setVisionState("idle");
     }
     setvisionAudio(false);
-  }
+  };
+
   const handelVAon = () => {
-    setvisionAudio(true)
-    visionVoiceAssistance()
-  }
+    setvisionAudio(true);
+    visionVoiceAssistance();
+  };
   const handelVisionON = () => {
     setvision(true)
   }
@@ -343,8 +336,8 @@ function App() {
     localStorage.removeItem('friday_chats');
   }, []);
 
-  
-  
+
+
   //Fetch Friday
   const onSubmit = async (data) => {
     setaudio(false);
@@ -438,7 +431,7 @@ function App() {
           <div className="h-screen w-screen bg-[#202123] absolute top-0 z-50 flex flex-col justify-center items-center">
 
             {/* Header */}
-            <div className="absolute left-0 top-0 flex items-center gap-4 cursor-pointer mt-5 ml-5 border p-2 px-3 rounded-2xl bg-gray-900">
+            <div className="absolute left-0 top-0 flex items-center gap-4 cursor-pointer mt-5 ml-5 border p-2 px-3 opacity-30 rounded-2xl bg-gray-900">
               <img src={VF} className="w-[35px] rounded-[5px] shadow-md invert" alt="Vision Icon" />
               <div className="text-2xl text-white font-bold">Vision</div>
             </div>
