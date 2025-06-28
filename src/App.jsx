@@ -61,7 +61,7 @@ function App() {
 
   const activechat = chats.find(chat => chat.id === Aid);
 
-  const handelGIT = () =>{
+  const handelGIT = () => {
     window.open('https://github.com/arijit-bit/', '_blank');
   }
 
@@ -74,8 +74,10 @@ function App() {
   };
 
   // Vision Assiatance
+  let isRestarting = false;
+
   const visionVoiceAssistance = () => {
-    if (!("webkitSpeechRecognition" in window)) return;
+    if (!("webkitSpeechRecognition" in window) || isRestarting) return;
 
     const recognition = new webkitSpeechRecognition();
     recognition.continuous = true;
@@ -95,9 +97,7 @@ function App() {
 
       if (newTranscript.trim()) {
         finalTranscript += newTranscript;
-
-        // Immediately stop recognition and process the result
-        recognition.stop();
+        recognition.stop(); // Stop listening before speaking
         setVisionAudio(false);
         setVisionState("thinking");
 
@@ -105,10 +105,17 @@ function App() {
         const response = await fetchVisionData(userInput);
 
         setVisionState("talking");
+
+        // Avoid infinite loop by delaying next recognition start
+        isRestarting = true;
         speakVisionOutput(response, () => {
           finalTranscript = "";
           setVisionState("idle");
-          visionVoiceAssistance(); // restart
+
+          setTimeout(() => {
+            isRestarting = false;
+            visionVoiceAssistance(); // Safe to restart after delay
+          }, 1000); // 1 second delay to avoid Android crash/loop
         });
       }
     };
@@ -125,7 +132,6 @@ function App() {
     recognitionRef.current = recognition;
     recognition.start();
   };
-
 
 
   //fetch vision data
