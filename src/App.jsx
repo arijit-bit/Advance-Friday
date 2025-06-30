@@ -74,14 +74,13 @@ function App() {
   };
 
   // Vision Assistance
-  let isRestarting = false;
+ let isRestarting = false;
   let isMicrophoneActive = true;
-  let finalTranscript = ""; // Moved to outer scope for reuse
+  let finalTranscript = "";
 
   const visionVoiceAssistance = () => {
     if (!("webkitSpeechRecognition" in window) || isRestarting || !isMicrophoneActive) return;
 
-    // Cleanup any previous recognizer
     if (recognitionRef.current) {
       recognitionRef.current.onresult = null;
       recognitionRef.current.onend = null;
@@ -94,11 +93,12 @@ function App() {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-
+  
     recognition.onstart = () => {
       setVisionAudio(true);
+      console.log("🎤 Listening started...");
     };
-
+  
     recognition.onresult = (event) => {
       let newTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -106,58 +106,61 @@ function App() {
           newTranscript += event.results[i][0].transcript + " ";
         }
       }
-
+  
       if (newTranscript.trim()) {
         finalTranscript += newTranscript;
+        console.log("✅ Final Input:", finalTranscript);
+  
         setVisionAudio(false);
         setVisionState("thinking");
         isMicrophoneActive = false;
-        recognition.stop(); // Let it flow to onend
+        recognition.stop();
       }
     };
-
-    recognition.onerror = () => {
+  
+    recognition.onerror = (event) => {
+      console.error("❌ Recognition error:", event.error);
       setVisionAudio(false);
       setVisionState("idle");
       isMicrophoneActive = true;
-      finalTranscript = ""; // Reset on error
+      finalTranscript = "";
     };
-
+  
     recognition.onend = async () => {
       setVisionAudio(false);
-
+  
       if (!finalTranscript.trim()) {
-        // Nothing was spoken
+        console.log("⚠️ No input detected.");
         isMicrophoneActive = true;
         return;
       }
-
+  
       const userInput = finalTranscript.trim();
-      finalTranscript = ""; // Reset before speaking
-
+      finalTranscript = "";
+  
       try {
         const response = await fetchVisionData(userInput);
         setVisionState("talking");
-
+  
         isRestarting = true;
-
+  
         speakVisionOutput(response, () => {
           setVisionState("idle");
           isMicrophoneActive = true;
-
+  
           setTimeout(() => {
             isRestarting = false;
-            visionVoiceAssistance(); // Restart listening after speaking
-          }, 1000); // Safe delay for Android
+            visionVoiceAssistance(); // Restart recognition
+          }, 1500); // Slightly increased delay for Android stability
         });
-
+  
       } catch (err) {
-        console.error("Error in fetch/speak:", err);
+        console.error("❌ Error:", err);
         setVisionState("idle");
         isMicrophoneActive = true;
       }
     };
-
+  
     recognitionRef.current = recognition;
     recognition.start();
   };
