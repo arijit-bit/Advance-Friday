@@ -74,13 +74,14 @@ function App() {
   };
 
   // Vision Assistance
- let isRestarting = false;
+  let isRestarting = false;
   let isMicrophoneActive = true;
-  let finalTranscript = "";
+  let finalTranscript = ""; // Moved to outer scope for reuse
 
   const visionVoiceAssistance = () => {
     if (!("webkitSpeechRecognition" in window) || isRestarting || !isMicrophoneActive) return;
 
+    // Cleanup any previous recognizer
     if (recognitionRef.current) {
       recognitionRef.current.onresult = null;
       recognitionRef.current.onend = null;
@@ -93,12 +94,11 @@ function App() {
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-  
+
     recognition.onstart = () => {
       setVisionAudio(true);
-      console.log("🎤 Listening started...");
     };
-  
+
     recognition.onresult = (event) => {
       let newTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -106,61 +106,58 @@ function App() {
           newTranscript += event.results[i][0].transcript + " ";
         }
       }
-  
+
       if (newTranscript.trim()) {
         finalTranscript += newTranscript;
-        console.log("✅ Final Input:", finalTranscript);
-  
         setVisionAudio(false);
         setVisionState("thinking");
         isMicrophoneActive = false;
-        recognition.stop();
+        recognition.stop(); // Let it flow to onend
       }
     };
-  
-    recognition.onerror = (event) => {
-      console.error("❌ Recognition error:", event.error);
+
+    recognition.onerror = () => {
       setVisionAudio(false);
       setVisionState("idle");
       isMicrophoneActive = true;
-      finalTranscript = "";
+      finalTranscript = ""; // Reset on error
     };
-  
+
     recognition.onend = async () => {
       setVisionAudio(false);
-  
+
       if (!finalTranscript.trim()) {
-        console.log("⚠️ No input detected.");
+        // Nothing was spoken
         isMicrophoneActive = true;
         return;
       }
-  
+
       const userInput = finalTranscript.trim();
-      finalTranscript = "";
-  
+      finalTranscript = ""; // Reset before speaking
+
       try {
         const response = await fetchVisionData(userInput);
         setVisionState("talking");
-  
+
         isRestarting = true;
-  
+
         speakVisionOutput(response, () => {
           setVisionState("idle");
           isMicrophoneActive = true;
-  
+
           setTimeout(() => {
             isRestarting = false;
-            visionVoiceAssistance(); // Restart recognition
-          }, 1500); // Slightly increased delay for Android stability
+            visionVoiceAssistance(); // Restart listening after speaking
+          }, 1000); // Safe delay for Android
         });
-  
+
       } catch (err) {
-        console.error("❌ Error:", err);
+        console.error("Error in fetch/speak:", err);
         setVisionState("idle");
         isMicrophoneActive = true;
       }
     };
-  
+
     recognitionRef.current = recognition;
     recognition.start();
   };
@@ -702,7 +699,9 @@ function App() {
             {outputs.length === 0 ? (
               <div className="flex justify-center items-center h-full flex-col space-y-4">
                 {/* <video src={Friday} className={`h-[150px] w-[150px] mix-blend-screen ${isDark ? '' : 'invert'}`} autoPlay loop muted playsInline /> */}
-                <div className={`bouncing-ball mb-10 ${isDark ? '' : 'invert'}`}></div>
+                <div className={`h-[100px] flex bouncing-ball justify-center items-center w-[100px] mb-8 bg-red-800 rounded-full ${isDark ? '' : 'invert'}`}>
+                  <div className='font-bold text-[40px] text-white opacity-50'>AI</div>
+                </div>
 
                 {/* <img src={Friday} className={`h-[150px] w-[150px] ${isDark ? '' : 'invert'}`} alt="" /> */}
                 <div className="typewriter bg-transparent text-black text-center font-mono text-[1.2rem] whitespace-pre-wrap break-words">
