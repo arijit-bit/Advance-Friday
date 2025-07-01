@@ -57,10 +57,9 @@ body {
   border-radius: 50%;
   position: relative;
   overflow: hidden;
-  animation: bounce 2s ease-in-out infinite;
+  animation: bounce 3s ease-in-out infinite;
   background: transparent;
 }
-
 /* Internal glowing waves */
 .bouncing-ball::before {
   content: "";
